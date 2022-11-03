@@ -14,7 +14,7 @@ import sttp.tapir.ztapir.RIOMonadError
 
 object EndpointsSpec extends ZIOSpecDefault:
   def spec = suite("Endpoints spec")(
-    test("return hello message") {
+    test("return pong message") {
       // given
       val backendStub = TapirStubInterpreter(SttpBackendStub(new RIOMonadError[Any]))
         .whenServerEndpoint(helloServerEndpoint)
@@ -23,13 +23,13 @@ object EndpointsSpec extends ZIOSpecDefault:
 
       // when
       val response = basicRequest
-        .get(uri"http://test.com/hello?name=adam")
+        .get(uri"http://test.com/ping")
         .send(backendStub)
 
       // then
-      assertZIO(response.map(_.body))(isRight(equalTo("Hello adam")))
+      assertZIO(response.map(_.body))(isRight(equalTo("pong")))
     },
-    test("list available books") {
+    test("list available affirmations") {
       // given
       val backendStub = TapirStubInterpreter(SttpBackendStub(new RIOMonadError[Any]))
         .whenServerEndpoint(booksListingServerEndpoint)
@@ -38,11 +38,11 @@ object EndpointsSpec extends ZIOSpecDefault:
 
       // when
       val response = basicRequest
-        .get(uri"http://test.com/books/list/all")
-        .response(asJson[List[Book]])
+        .get(uri"http://test.com/affirmations/list/all")
+        .response(asJson[List[Affirmation]])
         .send(backendStub)
 
       // then
-      assertZIO(response.map(_.body))(isRight(equalTo(books)))
+      assertZIO(response.map(_.body))(isRight(equalTo(affirmations)))
     }
   )

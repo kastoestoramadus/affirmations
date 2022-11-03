@@ -13,17 +13,25 @@ import zio.Task
 import zio.ZIO
 
 object Endpoints:
-  case class User(name: String) extends AnyVal
-  val helloEndpoint: PublicEndpoint[User, Unit, String, Any] = endpoint.get
-    .in("hello")
-    .in(query[User]("name"))
+  val pingEndpoint: PublicEndpoint[Unit, Unit, String, Any] = endpoint.get
+    .in("ping")
     .out(stringBody)
-  val helloServerEndpoint: ZServerEndpoint[Any, Any] = helloEndpoint.serverLogicSuccess(user => ZIO.succeed(s"Hello ${user.name}"))
+  val helloServerEndpoint: ZServerEndpoint[Any, Any] = pingEndpoint.serverLogicSuccess(_ => ZIO.succeed("pong"))
 
-  val booksListing: PublicEndpoint[Unit, Unit, List[Book], Any] = endpoint.get
-    .in("books" / "list" / "all")
-    .out(jsonBody[List[Book]])
-  val booksListingServerEndpoint: ZServerEndpoint[Any, Any] = booksListing.serverLogicSuccess(_ => ZIO.succeed(Library.books))
+  case class Paging(from: Int, limit: Int)
+
+  val paging: EndpointInput[Option[Paging]] =
+    query[Option[Int]]("start").and(query[Option[Int]]("limit"))
+      .map(input =>
+        input._1.flatMap(from => input._2.map(limit => Paging(from, limit)))
+      )(paging => (paging.map(_.from), paging.map(_.limit)))
+
+  val booksListing: PublicEndpoint[Option[Paging], Unit, List[Affirmation], Any] = endpoint.get
+    .in("affirmations" / "list" / "all")
+    .in(paging)
+    .out(jsonBody[List[Affirmation]])
+  val booksListingServerEndpoint: ZServerEndpoint[Any, Any] =
+    booksListing.serverLogicSuccess(_ => ZIO.succeed(Library.affirmations))
 
   val apiEndpoints: List[ZServerEndpoint[Any, Any]] = List(helloServerEndpoint, booksListingServerEndpoint)
 
@@ -36,12 +44,12 @@ object Endpoints:
   val all: List[ZServerEndpoint[Any, Any]] = apiEndpoints ++ docEndpoints ++ List(metricsEndpoint)
 
 object Library:
-  case class Author(name: String)
-  case class Book(title: String, year: Int, author: Author)
+  type Author = String
+  case class Affirmation(content: String, author: Author)
 
-  val books = List(
-    Book("The Sorrows of Young Werther", 1774, Author("Johann Wolfgang von Goethe")),
-    Book("On the Niemen", 1888, Author("Eliza Orzeszkowa")),
-    Book("The Art of Computer Programming", 1968, Author("Donald Knuth")),
-    Book("Pharaoh", 1897, Author("Boleslaw Prus"))
+  val affirmations = List(
+    Affirmation("Akceptuję cuda i wszelkie pozytywne zmiany w całym swoim życiu", "Johann Wolfgang von Goethe"),
+    Affirmation("Akceptuję doskonałe zdrowie i wygląd swojego ciała", "Eliza Orzeszkowa"),
+    Affirmation("Akceptuję i doceniam wysoki potencjał mojego ciała", "Donald Knuth"),
+    Affirmation("Akceptuję i szanuję swoje seksualne ciało", "Boleslaw Prus")
   )

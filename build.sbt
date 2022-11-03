@@ -1,3 +1,5 @@
+enablePlugins(JavaAppPackaging)
+enablePlugins(DockerPlugin)
 val tapirVersion = "1.1.4"
 
 lazy val rootProject = (project in file(".")).settings(
@@ -13,12 +15,13 @@ lazy val rootProject = (project in file(".")).settings(
       "com.softwaremill.sttp.tapir" %% "tapir-prometheus-metrics" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion,
-      "ch.qos.logback" % "logback-classic" % "1.4.4",
+      "ch.qos.logback" % "logback-classic" % "1.3.4", // don't upgrade to 1.4.x, docker won't start nor show logs
       "com.softwaremill.sttp.tapir" %% "tapir-sttp-stub-server" % tapirVersion % Test,
-      "dev.zio" %% "zio-test" % "2.0.0" % Test,
-      "dev.zio" %% "zio-test-sbt" % "2.0.0" % Test,
-      "com.softwaremill.sttp.client3" %% "circe" % "3.8.3" % Test
+      "dev.zio" %% "zio-test" % "2.0.3" % Test,
+      "dev.zio" %% "zio-test-sbt" % "2.0.3" % Test,
+      "com.softwaremill.sttp.client3" %% "circe" % "3.8.3" % Test,
     ),
-    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework")),
+    dockerExposedPorts ++= Seq(8080)
   )
 )
