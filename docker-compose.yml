@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  webservice:
+    image: 'affirmations:0.1.0-SNAPSHOT'
+
+    ports:
+      - 8080:8080
+
+  database:
+    image: 'postgres:latest'
+
+    ports:
+      - 5432:5432
+
+    volumes:
+      - ./db/init-affirmations.sql:/docker-entrypoint-initdb.d/init-affirmations.sql
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: default_database

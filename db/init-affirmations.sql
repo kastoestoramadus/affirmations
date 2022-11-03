@@ -1,7 +1,7 @@
 CREATE TABLE affirmation(
-  id INT PRIMARY KEY    NOT NULL,
-  content     TEXT      NOT NULL,
-  author      TEXT      NOT NULL
+  id serial PRIMARY KEY    NOT NULL,
+  content        TEXT      NOT NULL,
+  author         TEXT      NOT NULL
 );
 
 INSERT INTO affirmation(content, author) VALUES
