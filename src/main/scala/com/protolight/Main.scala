@@ -6,14 +6,16 @@ import sttp.tapir.server.ziohttp.{ZioHttpInterpreter, ZioHttpServerOptions}
 import zhttp.http.HttpApp
 import zhttp.service.server.ServerChannelFactory
 import zhttp.service.{EventLoopGroup, Server}
-import zio.{Console, Scope, Task, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer}
+import zio._
+
 
 object Main extends ZIOAppDefault:
   val log = LoggerFactory.getLogger(ZioHttpInterpreter.getClass.getName)
 
   override def run: ZIO[Any with ZIOAppArgs with Scope, Any, Any] =
 
-    val app: HttpApp[Any, Throwable] = {
+    def app(library: AffirmationsLibrary): HttpApp[Any, Throwable] = {
+      val endpoints = Endpoints(library)
       val serverOptions: ZioHttpServerOptions[Any] =
         ZioHttpServerOptions.customiseInterceptors
           .serverLog(
@@ -25,16 +27,16 @@ object Main extends ZIOAppDefault:
               noLog = ZIO.unit
             )
           )
-          .metricsInterceptor(Endpoints.prometheusMetrics.metricsInterceptor())
+          .metricsInterceptor(endpoints.prometheusMetrics.metricsInterceptor())
           .options
 
-      ZioHttpInterpreter(serverOptions).toHttp(Endpoints.all)
+      ZioHttpInterpreter(serverOptions).toHttp(endpoints.all)
     }
 
     ZIO.service[AffirmationsConfig].flatMap{ config =>
       (for
-        serverStart <- Server.start(port = config.port, http = app)
-        _ <- Console.printLine(s"Go to http://localhost:${config.port}/docs to open SwaggerUI.")
+        serverStart <- Server.start(port = config.api.port, http = app(InMemoryLibrary))
+        _ <- Console.printLine(s"Go to http://localhost:${config.api.port}/docs to open SwaggerUI.")
       yield serverStart)
         .provideSomeLayer(EventLoopGroup.auto(0) ++ ServerChannelFactory.auto ++ Scope.default)
     }.provide(
