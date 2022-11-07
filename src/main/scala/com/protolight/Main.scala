@@ -1,15 +1,16 @@
 package com.protolight
 
+import com.protolight.persistance.{PersistentLibrary, ZioDoobieConfig}
 import org.slf4j.LoggerFactory
 import sttp.tapir.server.interceptor.log.DefaultServerLog
 import sttp.tapir.server.ziohttp.{ZioHttpInterpreter, ZioHttpServerOptions}
 import zhttp.http.HttpApp
 import zhttp.service.server.ServerChannelFactory
 import zhttp.service.{EventLoopGroup, Server}
-import zio._
-
+import zio.*
 
 object Main extends ZIOAppDefault:
+  type AppEnv = AffirmationsConfig & AffirmationsLibrary
   val log = LoggerFactory.getLogger(ZioHttpInterpreter.getClass.getName)
 
   override def run: ZIO[Any with ZIOAppArgs with Scope, Any, Any] =
@@ -33,13 +34,15 @@ object Main extends ZIOAppDefault:
       ZioHttpInterpreter(serverOptions).toHttp(endpoints.all)
     }
 
-    ZIO.service[AffirmationsConfig].flatMap{ config =>
-      (for
-        serverStart <- Server.start(port = config.api.port, http = app(InMemoryLibrary))
-        _ <- Console.printLine(s"Go to http://localhost:${config.api.port}/docs to open SwaggerUI.")
-      yield serverStart)
-        .provideSomeLayer(EventLoopGroup.auto(0) ++ ServerChannelFactory.auto ++ Scope.default)
-    }.provide(
-      AffirmationsConfig.layer
-    )
-
+    (for
+      config <- ZIO.service[AffirmationsConfig]
+      library <- ZIO.service[AffirmationsLibrary]
+      serverStart <- Server.start(port = config.api.port, http = app(library))
+      _ <- Console.printLine(s"Go to http://localhost:${config.api.port}/docs to open SwaggerUI.")
+    yield serverStart)
+      .provideSomeLayer(EventLoopGroup.auto(0) ++ ServerChannelFactory.auto ++ Scope.default)
+      .provide(
+        AffirmationsConfig.layer,
+        ZioDoobieConfig.liveTransactor,
+        PersistentLibrary.live
+      )

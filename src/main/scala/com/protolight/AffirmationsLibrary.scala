@@ -1,6 +1,6 @@
 package com.protolight
 
-import zio._
+import zio.*
 
 import scala.collection.mutable
 
@@ -24,4 +24,9 @@ object AffirmationsLibrary {
   case class Paging(from: Int, limit: Int)
 
   case class Affirmation(id: Long, content: String, author: Author)
+
+  val library: URIO[AffirmationsLibrary, AffirmationsLibrary] = ZIO.service
+
+  def getAll(paging: Option[Paging], isAscendingOrder: Option[Boolean]) =
+    ZIO.serviceWithZIO[AffirmationsLibrary](_.getAll(paging, isAscendingOrder))
 }

@@ -8,6 +8,7 @@ import cats.*
 import cats.data.*
 import cats.effect.*
 import cats.implicits.*
+import com.protolight.AffirmationsConfig
 import doobie.*
 import doobie.implicits.*
 import zio.interop.catz.implicits.*
@@ -31,21 +32,21 @@ object ZioDoobieConfig {
     }
   }
 
-  def transactor: ZIO[DbConfig & Scope, Throwable, Transactor[Task]] =
+  def transactor: ZIO[AffirmationsConfig & Scope, Throwable, Transactor[Task]] =
     for
       ec <- ZIO.executor.map(_.asExecutionContext)
-      config <- ZIO.service[DbConfig]
+      config <- ZIO.service[AffirmationsConfig]
       xa <- HikariTransactor
         .newHikariTransactor[Task](
           "org.postgresql.Driver",
-          config.url,
-          config.user,
-          config.password,
+          config.db.url,
+          config.db.user,
+          config.db.password,
           ec,
         )
         .toScopedZIO
     yield xa
 
-  val liveTransactor: ZLayer[DbConfig, Throwable, Transactor[Task]] =
+  val liveTransactor: ZLayer[AffirmationsConfig, Throwable, Transactor[Task]] =
     ZLayer.scoped(transactor)
 }

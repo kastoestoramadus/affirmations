@@ -1,7 +1,7 @@
 package com.protolight
 
 import com.protolight.AffirmationsLibrary.*
-import zio.{Task, ZIO}
+import zio.{Task, ZIO, ZLayer}
 
 import scala.collection.mutable
 
@@ -33,4 +33,6 @@ object InMemoryLibrary extends AffirmationsLibrary {
       true
     }).getOrElse(false)
   )
+
+  val live: ZLayer[Any, Throwable, AffirmationsLibrary] = ZLayer.succeed {InMemoryLibrary}
 }
