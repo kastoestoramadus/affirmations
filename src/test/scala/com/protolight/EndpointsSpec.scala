@@ -40,7 +40,7 @@ object EndpointsSpec extends ZIOSpecDefault:
 
       // when
       val response = basicRequest
-        .get(uri"http://test.com/affirmations/list/all")
+        .get(uri"http://test.com/affirmation/all")
         .response(asJson[List[Affirmation]])
         .send(backendStub)
 

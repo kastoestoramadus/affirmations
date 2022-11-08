@@ -7,7 +7,7 @@ import scala.collection.mutable
 trait AffirmationsLibrary {
   import AffirmationsLibrary._
   /*
-    isAscendingOrder, unidentified order when None; Ascending when true, Descending when false;
+    isAscendingOrder, Ascending as default/None; Ascending when true, Descending when false;
   */
   def getAll(paging: Option[Paging], isAscendingOrder: Option[Boolean]): Task[List[Affirmation]]
 

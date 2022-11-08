@@ -40,7 +40,7 @@ class Endpoints(library: AffirmationsLibrary):
     affirmationsListingServerEndpoint
   )
 
-  // investigate why ZServerEndpoint[AffirmationsLibrary, Any] can't be matched to _ nor ?. Forced to workaround
+  // FIXME: investigate why ZServerEndpoint[AffirmationsLibrary, Any] can't be matched to _ nor ?. Forced to workaround; BUG?
   val docEndpoints: List[ZServerEndpoint[Any, Any]] = SwaggerInterpreter()
     .fromServerEndpoints[Task](apiEndpoints, "affirmations", "1.0.0")
 
@@ -70,12 +70,16 @@ object Endpoints {
 
   val getAffirmationEndpoint: Endpoint[Unit, Long, Unit, Affirmation, Any] = endpoint.get
     .in("affirmation")
-    .in(query[Long]("id"))
+    .in(query[Long]("id")
+      .example(9)
+    )
     .out(jsonBody[Affirmation])
 
   val deleteAffirmationEndpoint: Endpoint[Unit, Long, Unit, Boolean, Any] = endpoint.delete
     .in("affirmation")
-    .in(query[Long]("id"))
+    .in(query[Long]("id")
+      .example(738)
+    )
     .out(jsonBody[Boolean])
 
   val createAffirmationEndpoint: PublicEndpoint[Affirmation, Unit, Affirmation, Any] = endpoint.post

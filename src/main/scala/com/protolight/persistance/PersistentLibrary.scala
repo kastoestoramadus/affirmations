@@ -25,7 +25,7 @@ final class PersistentLibrary(tnx: Transactor[Task]) extends AffirmationsLibrary
 
   def getAll(paging: Option[Paging], isAscendingOrder: Option[Boolean]): Task[List[Affirmation]] =
     SQL
-      .getAll(paging, isAscendingOrder)
+      .getAll(paging.getOrElse(Paging(0, 10000)), isAscendingOrder.getOrElse(true))
       .to[List]
       .transact(tnx)
       .foldZIO(
@@ -61,8 +61,13 @@ object PersistentLibrary {
     def get(id: Long): Query0[Affirmation] =
       sql"SELECT * FROM affirmation WHERE id = $id".query[Affirmation]
 
-    def getAll(paging: Option[Paging], isAscendingOrder: Option[Boolean]): Query0[Affirmation] =
-      sql"SELECT * FROM affirmation".query[Affirmation]
+    def getAll(paging: Paging, isAscendingOrder: Boolean): Query0[Affirmation] = {
+      val order = if (isAscendingOrder) " ASC " else " DESC "
+      // FIXME why "ORDER BY content $order" produces a syntax error; BUG? works fine in psql console
+      // sql"SELECT * FROM affirmation ORDER BY content $order OFFSET ${paging.from} LIMIT ${paging.limit} ;"
+      sql"SELECT * FROM affirmation OFFSET ${paging.from} LIMIT ${paging.limit} ;"
+        .query[Affirmation]
+    }
 
     def create(affirmation: Affirmation): Update0 =
       sql"INSERT INTO affirmation(id, content, author) VALUES (${affirmation.id} ,${affirmation.content}, ${affirmation.author})".update

@@ -1,27 +1,13 @@
-## Quick start
+## Preparation
 
-If you don't have [sbt](https://www.scala-sbt.org) installed already, you can use the provided wrapper script:
+`sbt docker:publishLocal`
 
-```shell
-./sbtx -h # shows an usage of a wrapper script
-./sbtx compile # build the project
-./sbtx test # run the tests
-./sbtx run # run the application (Main)
-```
+## Running service with DB
 
-For more details check the [sbtx usage](https://github.com/dwijnand/sbt-extras#sbt--h) page.
+`docker-compose up`
 
-Otherwise, if sbt is already installed, you can use the standard commands:
+## Running the integration tests
 
-```shell
-sbt compile # build the project
-sbt test # run the tests
-sbt run # run the application (Main)
-```
+`./runIt.sh`
 
-## Links:
-
-* [tapir documentation](https://tapir.softwaremill.com/en/latest/)
-* [tapir github](https://github.com/softwaremill/tapir)
-* [bootzooka: template microservice using tapir](https://softwaremill.github.io/bootzooka/)
-* [sbtx wrapper](https://github.com/dwijnand/sbt-extras#installation)
+WARN: integrations tests use the same instance of App

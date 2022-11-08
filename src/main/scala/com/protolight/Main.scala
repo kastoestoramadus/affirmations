@@ -38,6 +38,7 @@ object Main extends ZIOAppDefault:
       library <- ZIO.service[AffirmationsLibrary]
       serverStart <- Server.start(port = config.api.port, http = app(library))
       _ <- Console.printLine(s"Go to http://localhost:${config.api.port}/docs to open SwaggerUI.")
+      _ <- Console.readLine
     yield serverStart)
       .provideSomeLayer(EventLoopGroup.auto(0) ++ ServerChannelFactory.auto ++ Scope.default)
       .provide(
