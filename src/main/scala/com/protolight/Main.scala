@@ -10,7 +10,6 @@ import zhttp.service.{EventLoopGroup, Server}
 import zio.*
 
 object Main extends ZIOAppDefault:
-  type AppEnv = AffirmationsConfig & AffirmationsLibrary
   val log = LoggerFactory.getLogger(ZioHttpInterpreter.getClass.getName)
 
   override def run: ZIO[Any with ZIOAppArgs with Scope, Any, Any] =

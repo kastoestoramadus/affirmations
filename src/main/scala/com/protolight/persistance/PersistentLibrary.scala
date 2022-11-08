@@ -10,6 +10,19 @@ import zio.interop.catz.*
 final class PersistentLibrary(tnx: Transactor[Task]) extends AffirmationsLibrary {
   import PersistentLibrary._
 
+  def get(id: Long): Task[Affirmation] =
+    SQL
+      .get(id)
+      .option
+      .transact(tnx)
+      .foldZIO(
+        err => ZIO.fail(err),
+        {
+          case Some(value) => ZIO.succeed(value)
+          case None        => ZIO.fail(NotFound(id))
+        }
+      )
+
   def getAll(paging: Option[Paging], isAscendingOrder: Option[Boolean]): Task[List[Affirmation]] =
     SQL
       .getAll(paging, isAscendingOrder)
@@ -45,6 +58,9 @@ final class PersistentLibrary(tnx: Transactor[Task]) extends AffirmationsLibrary
 object PersistentLibrary {
 
   object SQL {
+    def get(id: Long): Query0[Affirmation] =
+      sql"SELECT * FROM affirmation WHERE id = $id".query[Affirmation]
+
     def getAll(paging: Option[Paging], isAscendingOrder: Option[Boolean]): Query0[Affirmation] =
       sql"SELECT * FROM affirmation".query[Affirmation]
 

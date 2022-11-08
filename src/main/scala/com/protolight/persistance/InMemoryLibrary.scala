@@ -1,6 +1,7 @@
-package com.protolight
+package com.protolight.persistance
 
 import com.protolight.AffirmationsLibrary.*
+import com.protolight.{AffirmationsLibrary, Id}
 import zio.{Task, ZIO, ZLayer}
 
 import scala.collection.mutable
@@ -28,11 +29,19 @@ object InMemoryLibrary extends AffirmationsLibrary {
   })
 
   def delete(id: Long): Task[Boolean] = ZIO.succeed(
-    affirmations.find(_.id == id).map(found => {
-      affirmations.remove(found)
-      true
-    }).getOrElse(false)
+    affirmations
+      .find(_.id == id)
+      .map(found => {
+        affirmations.remove(found)
+        true
+      })
+      .getOrElse(false)
   )
 
-  val live: ZLayer[Any, Throwable, AffirmationsLibrary] = ZLayer.succeed {InMemoryLibrary}
+  def get(id: Id): Task[Affirmation] = affirmations.find(_.id == id) match {
+    case Some(value) => ZIO.succeed(value)
+    case None        => ZIO.fail(NotFound(id))
+  }
+
+  val live: ZLayer[Any, Throwable, AffirmationsLibrary] = ZLayer.succeed { InMemoryLibrary }
 }

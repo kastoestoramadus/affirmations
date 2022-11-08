@@ -11,8 +11,8 @@ trait AffirmationsLibrary {
   */
   def getAll(paging: Option[Paging], isAscendingOrder: Option[Boolean]): Task[List[Affirmation]]
 
-  // TODO get one
-
+  def get(id: Long): Task[Affirmation]
+  
   def create(affirmation: Affirmation): Task[Affirmation]
 
   def update(one: Affirmation): Task[Boolean]
@@ -21,6 +21,8 @@ trait AffirmationsLibrary {
 }
 
 object AffirmationsLibrary {
+  case class NotFound(id: Long) extends Exception(s"Affirmation with id=$id Not Found")
+  
   case class Paging(from: Int, limit: Int)
 
   case class Affirmation(id: Long, content: String, author: Author)
