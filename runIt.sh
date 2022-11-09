@@ -2,6 +2,6 @@
 
 docker-compose up
 
-sbt it:test
+sbt "project it; test"
 
 docker-compose down
