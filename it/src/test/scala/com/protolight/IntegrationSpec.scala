@@ -17,7 +17,7 @@ object IntegrationSpec extends ZIOSpecDefault:
     test("list available affirmations") {
       // when
       val response = basicRequest
-        .get(uri"http://localhost:8080/affirmation/all?start=111&limit=3")
+        .get(uri"http://localhost:8080/affirmation/all?start=112&limit=3")
         .response(asJson[List[Affirmation]])
         .send(backend)
 
