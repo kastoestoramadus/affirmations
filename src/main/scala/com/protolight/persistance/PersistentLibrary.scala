@@ -10,7 +10,7 @@ import zio.interop.catz.*
 final class PersistentLibrary(tnx: Transactor[Task]) extends AffirmationsLibrary {
   import PersistentLibrary._
 
-  def get(id: Long): Task[Affirmation] =
+  def get(id: Long): Task[Either[NotFound, Affirmation]] =
     SQL
       .get(id)
       .option
@@ -18,8 +18,8 @@ final class PersistentLibrary(tnx: Transactor[Task]) extends AffirmationsLibrary
       .foldZIO(
         err => ZIO.fail(err),
         {
-          case Some(value) => ZIO.succeed(value)
-          case None        => ZIO.fail(NotFound(id))
+          case Some(value) => ZIO.succeed(Right(value))
+          case None        => ZIO.succeed(Left(NotFound(id)))
         }
       )
 
@@ -33,26 +33,35 @@ final class PersistentLibrary(tnx: Transactor[Task]) extends AffirmationsLibrary
         maybeAffirmations => ZIO.succeed(maybeAffirmations)
       )
 
-  def create(affirmation: Affirmation): Task[Affirmation] =
+  def create(affirmation: Affirmation): Task[Either[IdAlreadyTaken, Affirmation]] =
     SQL
       .create(affirmation)
       .run
       .transact(tnx)
-      .foldZIO(err => ZIO.fail(err), _ => ZIO.succeed(affirmation))
+      .foldZIO(
+        _ => ZIO.succeed(Left(IdAlreadyTaken(affirmation.id))), // FIXME not all are that
+        _ => ZIO.succeed(Right(affirmation))
+      )
 
-  def update(one: Affirmation): Task[Boolean] =
+  def update(one: Affirmation): Task[Either[NotFound, OperationSuccessful.type]] =
     SQL
       .update(one)
       .run
       .transact(tnx)
-      .fold(_ => false, _ => true)
+      .fold(
+        _ => Left(NotFound(one.id)), // FIXME not all are that
+        _ => Right(OperationSuccessful)
+      )
 
-  def delete(id: Long): Task[Boolean] =
+  def delete(id: Long): Task[Either[NotFound, OperationSuccessful.type]] =
     SQL
       .delete(id)
       .run
       .transact(tnx)
-      .fold(_ => false, _ => true)
+      .fold(
+        _ => Left(NotFound(id)), // FIXME not all are that
+        _ => Right(OperationSuccessful)
+      )
 }
 
 object PersistentLibrary {

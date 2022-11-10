@@ -1,6 +1,6 @@
 package com.protolight
 
-import com.protolight.AffirmationsLibrary.{Affirmation, Paging}
+import com.protolight.AffirmationsLibrary.{Affirmation, OperationSuccessful, Paging}
 import sttp.tapir.*
 import io.circe.generic.auto.*
 import sttp.tapir.generic.auto.*
@@ -10,6 +10,7 @@ import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import sttp.tapir.ztapir.ZServerEndpoint
 import zio.Task
 import zio.ZIO
+import sttp.model.StatusCode
 
 class Endpoints(library: AffirmationsLibrary):
   import Endpoints.*
@@ -17,19 +18,19 @@ class Endpoints(library: AffirmationsLibrary):
   val helloServerEndpoint: ZServerEndpoint[Any, Any] = pingEndpoint.serverLogicSuccess(_ => ZIO.succeed("pong"))
 
   val getAffirmationServerEndpoint: ZServerEndpoint[Any, Any] =
-    getAffirmationEndpoint.serverLogicSuccess(id => library.get(id))
+    getAffirmationEndpoint.serverLogic(id => library.get(id).map(_.left.map(old => GetAffirmation.NotFound(old.id))))
 
   val affirmationsListingServerEndpoint: ZServerEndpoint[Any, Any] =
     affirmationsListingEndpoint.serverLogicSuccess(pagingO => library.getAll(pagingO, None))
 
   val createAffirmationServerEndpoint: ZServerEndpoint[Any, Any] =
-    createAffirmationEndpoint.serverLogicSuccess(id => library.create(id))
+    createAffirmationEndpoint.serverLogic(id => library.create(id).map(_.left.map(old => CreateAffirmation.IdAlreadyTaken(old.id))))
 
   val updateAffirmationServerEndpoint: ZServerEndpoint[Any, Any] =
-    updateAffirmationEndpoint.serverLogicSuccess(id => library.update(id))
+    updateAffirmationEndpoint.serverLogic(id => library.update(id).map(_.left.map(old => UpdateAffirmation.NotFound(old.id))))
 
   val deleteAffirmationServerEndpoint: ZServerEndpoint[Any, Any] =
-    deleteAffirmationEndpoint.serverLogicSuccess(id => library.delete(id))
+    deleteAffirmationEndpoint.serverLogic(id => library.delete(id).map(_.left.map(old => DeleteAffirmation.NotFound(old.id))))
 
   val apiEndpoints: List[ZServerEndpoint[Any, Any]] = List(
     helloServerEndpoint,
@@ -50,8 +51,6 @@ class Endpoints(library: AffirmationsLibrary):
   val all: List[ZServerEndpoint[Any, Any]] = apiEndpoints ++ docEndpoints ++ List(metricsEndpoint)
 
 object Endpoints {
-  case class NotFound(what: String)
-
   val paging: EndpointInput[Option[Paging]] =
     query[Option[Int]]("start")
       .and(query[Option[Int]]("limit"))
@@ -68,21 +67,43 @@ object Endpoints {
     .in(paging)
     .out(jsonBody[List[Affirmation]])
 
-  val getAffirmationEndpoint: Endpoint[Unit, Long, Unit, Affirmation, Any] = endpoint.get
+  val getAffirmationEndpoint: Endpoint[Unit, Long, GetAffirmation.ErrorResponse, Affirmation, Any] = endpoint.get
     .in("affirmation")
-    .in(query[Long]("id")
-      .example(9)
+    .in(
+      query[Long]("id")
+        .example(9)
     )
     .out(jsonBody[Affirmation])
-
-  val deleteAffirmationEndpoint: Endpoint[Unit, Long, Unit, Boolean, Any] = endpoint.delete
-    .in("affirmation")
-    .in(query[Long]("id")
-      .example(738)
+    .errorOut(
+      oneOf[GetAffirmation.ErrorResponse](
+        oneOfVariant(StatusCode.NotFound, jsonBody[GetAffirmation.NotFound])
+      )
     )
-    .out(jsonBody[Boolean])
 
-  val createAffirmationEndpoint: PublicEndpoint[Affirmation, Unit, Affirmation, Any] = endpoint.post
+  object GetAffirmation {
+    trait ErrorResponse extends Throwable
+    case class NotFound(id: Long) extends ErrorResponse
+  }
+
+  val deleteAffirmationEndpoint: Endpoint[Unit, Long, DeleteAffirmation.ErrorResponse, OperationSuccessful.type, Any] = endpoint.delete
+    .in("affirmation")
+    .in(
+      query[Long]("id")
+        .example(738)
+    )
+    .out(jsonBody[OperationSuccessful.type])
+    .errorOut(
+      oneOf[DeleteAffirmation.ErrorResponse](
+        oneOfVariant(StatusCode.NotFound, jsonBody[DeleteAffirmation.NotFound])
+      )
+    )
+
+  object DeleteAffirmation {
+    trait ErrorResponse extends Throwable
+    case class NotFound(id: Long) extends ErrorResponse
+  }
+
+  val createAffirmationEndpoint: PublicEndpoint[Affirmation, CreateAffirmation.ErrorResponse, Affirmation, Any] = endpoint.post
     .in("affirmation")
     .in(
       jsonBody[Affirmation]
@@ -90,13 +111,33 @@ object Endpoints {
         .example(Affirmation(738, "Pracuję chętnie, efektywnie i z przyjemnością", "Waldemar Wosiński"))
     )
     .out(jsonBody[Affirmation])
+    .errorOut(
+      oneOf[CreateAffirmation.ErrorResponse](
+        oneOfVariant(StatusCode.BadRequest, jsonBody[CreateAffirmation.IdAlreadyTaken])
+      )
+    )
 
-  val updateAffirmationEndpoint: Endpoint[Unit, Affirmation, Unit, Boolean, Any] = endpoint.put
+  object CreateAffirmation {
+    trait ErrorResponse extends Throwable
+    case class IdAlreadyTaken(id: Long) extends ErrorResponse
+  }
+
+  val updateAffirmationEndpoint: Endpoint[Unit, Affirmation, UpdateAffirmation.ErrorResponse, OperationSuccessful.type, Any] = endpoint.put
     .in("affirmation")
     .in(
       jsonBody[Affirmation]
         .description("The new state of affirmation. Id must exist already.")
         .example(Affirmation(9, "Jestem niewinny i w porządku, gdy pozwalam innym dokonywać własnych wyborów", "Waldemar Wosiński"))
     )
-    .out(jsonBody[Boolean])
+    .out(jsonBody[OperationSuccessful.type])
+    .errorOut(
+      oneOf[UpdateAffirmation.ErrorResponse](
+        oneOfVariant(StatusCode.NotFound, jsonBody[UpdateAffirmation.NotFound])
+      )
+    )
+
+  object UpdateAffirmation {
+    trait ErrorResponse extends Throwable
+    case class NotFound(id: Long) extends ErrorResponse
+  }
 }

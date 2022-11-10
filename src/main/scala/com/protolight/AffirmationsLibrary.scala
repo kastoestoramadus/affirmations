@@ -8,21 +8,23 @@ trait AffirmationsLibrary {
   import AffirmationsLibrary._
   /*
     isAscendingOrder, Ascending as default/None; Ascending when true, Descending when false;
-  */
+   */
   def getAll(paging: Option[Paging], isAscendingOrder: Option[Boolean]): Task[List[Affirmation]]
 
-  def get(id: Long): Task[Affirmation]
-  
-  def create(affirmation: Affirmation): Task[Affirmation]
+  def get(id: Long): Task[Either[NotFound, Affirmation]]
 
-  def update(one: Affirmation): Task[Boolean]
+  def create(affirmation: Affirmation): Task[Either[IdAlreadyTaken, Affirmation]]
 
-  def delete(id: Long): Task[Boolean]
+  def update(one: Affirmation): Task[Either[NotFound, OperationSuccessful.type]]
+
+  def delete(id: Long): Task[Either[NotFound, OperationSuccessful.type]]
 }
 
 object AffirmationsLibrary {
-  case class NotFound(id: Long) extends Exception(s"Affirmation with id=$id Not Found")
-  
+  case class NotFound(id: Long) extends Throwable
+  case class IdAlreadyTaken(id: Long) extends Throwable
+  case object OperationSuccessful
+
   case class Paging(from: Int, limit: Int)
 
   case class Affirmation(id: Long, content: String, author: Author)

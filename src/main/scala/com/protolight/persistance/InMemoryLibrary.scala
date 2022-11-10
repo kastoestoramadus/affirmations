@@ -18,29 +18,29 @@ object InMemoryLibrary extends AffirmationsLibrary {
   def getAll(paging: Option[Paging], isAscendingOrder: Option[Boolean]): Task[List[Affirmation]] =
     ZIO.succeed(affirmations.toList)
 
-  def create(affirmation: Affirmation): Task[Affirmation] = ZIO.succeed { // warn: already exists not checked
+  def create(affirmation: Affirmation): Task[Either[IdAlreadyTaken, Affirmation]] = ZIO.succeed { // warn: already exists not checked
     affirmations.add(affirmation)
-    affirmation
+    Right(affirmation)
   }
 
-  def update(one: Affirmation): Task[Boolean] = delete(one.id).map(_ => {
+  def update(one: Affirmation): Task[Either[NotFound, OperationSuccessful.type]] = delete(one.id).map(_ => {
     affirmations.add(Affirmation(one.id, one.content, one.author))
-    true
+    Right(OperationSuccessful)
   })
 
-  def delete(id: Long): Task[Boolean] = ZIO.succeed(
+  def delete(id: Long): Task[Either[NotFound, OperationSuccessful.type]] = ZIO.succeed(
     affirmations
       .find(_.id == id)
       .map(found => {
         affirmations.remove(found)
-        true
+        Right(OperationSuccessful)
       })
-      .getOrElse(false)
+      .getOrElse(Left(NotFound(id)))
   )
 
-  def get(id: Id): Task[Affirmation] = affirmations.find(_.id == id) match {
-    case Some(value) => ZIO.succeed(value)
-    case None        => ZIO.fail(NotFound(id))
+  def get(id: Id): Task[Either[NotFound, Affirmation]] = affirmations.find(_.id == id) match {
+    case Some(value) => ZIO.succeed(Right(value))
+    case None        => ZIO.succeed(Left(NotFound(id)))
   }
 
   val live: ZLayer[Any, Throwable, AffirmationsLibrary] = ZLayer.succeed { InMemoryLibrary }
