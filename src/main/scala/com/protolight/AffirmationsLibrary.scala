@@ -33,4 +33,16 @@ object AffirmationsLibrary {
 
   def getAll(paging: Option[Paging], isAscendingOrder: Option[Boolean]) =
     ZIO.serviceWithZIO[AffirmationsLibrary](_.getAll(paging, isAscendingOrder))
+
+  def get(id: Long) =
+    ZIO.serviceWithZIO[AffirmationsLibrary](_.get(id))
+
+  def create(affirmation: Affirmation) =
+    ZIO.serviceWithZIO[AffirmationsLibrary](_.create(affirmation))
+
+  def update(one: Affirmation) =
+    ZIO.serviceWithZIO[AffirmationsLibrary](_.update(one))
+
+  def delete(id: Long) =
+    ZIO.serviceWithZIO[AffirmationsLibrary](_.delete(id))
 }

@@ -14,9 +14,8 @@ object Main extends ZIOAppDefault:
 
   override def run: ZIO[Any with ZIOAppArgs with Scope, Any, Any] =
 
-    def app(library: AffirmationsLibrary): HttpApp[Any, Throwable] = {
-      val endpoints = Endpoints(library)
-      val serverOptions: ZioHttpServerOptions[Any] =
+    def app: HttpApp[AffirmationsLibrary, Throwable] = {
+      val serverOptions =
         ZioHttpServerOptions.customiseInterceptors
           .serverLog(
             DefaultServerLog[Task](
@@ -27,16 +26,15 @@ object Main extends ZIOAppDefault:
               noLog = ZIO.unit
             )
           )
-          .metricsInterceptor(endpoints.prometheusMetrics.metricsInterceptor())
+          .metricsInterceptor(ServerEndpoints.prometheusMetrics.metricsInterceptor())
           .options
 
-      ZioHttpInterpreter(serverOptions).toHttp(endpoints.all)
+      ZioHttpInterpreter(serverOptions).toHttp(ServerEndpoints.all)
     }
 
     (for
       config <- ZIO.service[AffirmationsConfig]
-      library <- ZIO.service[AffirmationsLibrary]
-      serverStart <- Server.start(port = config.api.port, http = app(library))
+      serverStart <- Server.start(port = config.api.port, http = app)
       _ <- Console.printLine(s"Go to http://localhost:${config.api.port}/docs to open SwaggerUI.")
       _ <- Console.readLine
     yield serverStart)
