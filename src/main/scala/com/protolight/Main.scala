@@ -1,5 +1,6 @@
 package com.protolight
 
+import com.protolight.ServerEndpoints.DepsWorkaround
 import com.protolight.persistance.{PersistentLibrary, ZioDoobieConfig}
 import org.slf4j.LoggerFactory
 import sttp.tapir.server.interceptor.log.DefaultServerLog
@@ -13,17 +14,18 @@ object Main extends ZIOAppDefault:
   val log = LoggerFactory.getLogger(ZioHttpInterpreter.getClass.getName)
 
   override def run: ZIO[Any with ZIOAppArgs with Scope, Any, Any] =
-
     def app: HttpApp[AffirmationsLibrary, Throwable] = {
       val serverOptions =
         ZioHttpServerOptions.customiseInterceptors
           .serverLog(
-            DefaultServerLog[Task](
-              doLogWhenReceived = msg => ZIO.succeed(log.debug(msg)),
-              doLogWhenHandled = (msg, error) => ZIO.succeed(error.fold(log.debug(msg))(err => log.debug(msg, err))),
-              doLogAllDecodeFailures = (msg, error) => ZIO.succeed(error.fold(log.debug(msg))(err => log.debug(msg, err))),
-              doLogExceptions = (msg: String, ex: Throwable) => ZIO.succeed(log.debug(msg, ex)),
-              noLog = ZIO.unit
+            DefaultServerLog[DepsWorkaround](
+              doLogWhenReceived = msg => ZIO.service[AffirmationsLibrary] *> ZIO.succeed(log.debug(msg)),
+              doLogWhenHandled =
+                (msg, error) => ZIO.service[AffirmationsLibrary] *> ZIO.succeed(error.fold(log.debug(msg))(err => log.debug(msg, err))),
+              doLogAllDecodeFailures =
+                (msg, error) => ZIO.service[AffirmationsLibrary] *> ZIO.succeed(error.fold(log.debug(msg))(err => log.debug(msg, err))),
+              doLogExceptions = (msg: String, ex: Throwable) => ZIO.service[AffirmationsLibrary] *> ZIO.succeed(log.debug(msg, ex)),
+              noLog = ZIO.service[AffirmationsLibrary] *> ZIO.unit
             )
           )
           .metricsInterceptor(ServerEndpoints.prometheusMetrics.metricsInterceptor())

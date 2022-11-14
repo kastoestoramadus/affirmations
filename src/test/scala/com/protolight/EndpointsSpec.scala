@@ -13,13 +13,12 @@ import sttp.tapir.ztapir.RIOMonadError
 
 object EndpointsSpec extends ZIOSpecDefault:
   val library = InMemoryLibrary
-  val endpoints = Endpoints(library)
 
   def spec = suite("Endpoints spec")(
     test("return pong message") {
       // given
       val backendStub = TapirStubInterpreter(SttpBackendStub(new RIOMonadError[Any]))
-        .whenServerEndpoint(endpoints.helloServerEndpoint)
+        .whenServerEndpoint(ServerEndpoints.helloServerEndpoint)
         .thenRunLogic()
         .backend()
 
@@ -34,7 +33,7 @@ object EndpointsSpec extends ZIOSpecDefault:
     test("list available affirmations") {
       // given
       val backendStub = TapirStubInterpreter(SttpBackendStub(new RIOMonadError[Any]))
-        .whenServerEndpoint(endpoints.affirmationsListingServerEndpoint)
+        .whenServerEndpoint(ServerEndpoints.affirmationsListingServerEndpoint)
         .thenRunLogic()
         .backend()
 

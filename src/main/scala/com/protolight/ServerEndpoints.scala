@@ -9,12 +9,14 @@ import sttp.tapir.json.circe.*
 import sttp.tapir.server.metrics.prometheus.PrometheusMetrics
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import sttp.tapir.ztapir.ZServerEndpoint
-import zio.Task
-import zio.ZIO
+import zio.{RIO, Task, ZIO}
 import com.protolight.ApiEndpoints.*
 
 object ServerEndpoints:
   import AffirmationsLibrary.*
+
+  // Task should be enought, Workaround as consequence of Bad Dependencies signature here: https://github.com/softwaremill/tapir/blob/10b13ce1b0ef5b4c19532d40024eda7ff0ef0a3a/server/zio-http-server/src/main/scala/sttp/tapir/server/ziohttp/ZioHttpInterpreter.scala#L21
+  type DepsWorkaround[A] = RIO[AffirmationsLibrary, A]
 
   val helloServerEndpoint: ZServerEndpoint[Any, Any] = pingEndpoint.serverLogicSuccess(_ => ZIO.succeed("pong"))
 
@@ -45,7 +47,7 @@ object ServerEndpoints:
   val docEndpoints: List[ZServerEndpoint[AffirmationsLibrary, Any]] = SwaggerInterpreter()
     .fromServerEndpoints(apiEndpoints, "affirmations", "1.0.0")
 
-  val prometheusMetrics: PrometheusMetrics[Task] = PrometheusMetrics.default[Task]()
+  val prometheusMetrics: PrometheusMetrics[DepsWorkaround] = PrometheusMetrics.default[DepsWorkaround]()
   val metricsEndpoint: ZServerEndpoint[AffirmationsLibrary, Any] = prometheusMetrics.metricsEndpoint.widen[AffirmationsLibrary]
 
   val all: List[ZServerEndpoint[AffirmationsLibrary, Any]] =
