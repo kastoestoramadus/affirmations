@@ -2,7 +2,7 @@ package com.protolight.persistance
 
 import com.protolight.{AffirmationsLibrary, Author, Id}
 import doobie.implicits.*
-import doobie.{Query0, Transactor, Update0}
+import doobie.{Fragment, Query0, Transactor, Update0}
 import zio.{Task, *}
 import AffirmationsLibrary.*
 import zio.interop.catz.*
@@ -71,10 +71,8 @@ object PersistentLibrary {
       sql"SELECT * FROM affirmation WHERE id = $id".query[Affirmation]
 
     def getAll(paging: Paging, isAscendingOrder: Boolean): Query0[Affirmation] = {
-      val order = if (isAscendingOrder) " ASC " else " DESC "
-      // FIXME why "ORDER BY content $order" produces a syntax error; BUG? works fine in psql console
-      // sql"SELECT * FROM affirmation ORDER BY content $order OFFSET ${paging.from} LIMIT ${paging.limit} ;"
-      sql"SELECT * FROM affirmation OFFSET ${paging.from} LIMIT ${paging.limit} ;"
+      val order: Fragment = if (isAscendingOrder) sql" ASC " else sql" DESC "
+      sql"SELECT * FROM affirmation ORDER BY content $order OFFSET ${paging.from} LIMIT ${paging.limit} ;"
         .query[Affirmation]
     }
 
