@@ -32,7 +32,7 @@ object EndpointsSpec extends ZIOSpecDefault:
     },
     test("list available affirmations") {
       // given
-      val backendStub = TapirStubInterpreter(SttpBackendStub(new RIOMonadError[Any]))
+      val backendStub = TapirStubInterpreter(SttpBackendStub(new RIOMonadError[AffirmationsLibrary]))
         .whenServerEndpoint(ServerEndpoints.affirmationsListingServerEndpoint)
         .thenRunLogic()
         .backend()
@@ -45,5 +45,5 @@ object EndpointsSpec extends ZIOSpecDefault:
 
       // then
       assertZIO(response.map(_.body))(isRight(equalTo(library.affirmations.toList)))
-    }
+    }.provide(InMemoryLibrary.live)
   )
